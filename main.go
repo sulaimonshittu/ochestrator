@@ -3,108 +3,45 @@ package main
 import (
 	"fmt"
 	"ochestrator/manager"
-	"ochestrator/node"
 	"ochestrator/task"
 	"ochestrator/worker"
 	"os"
-	"time"
+	"strconv"
 
-	"github.com/docker/docker/client"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
 )
 
 func main() {
-	t := task.Task{
-		ID:     uuid.New(),
-		Name:   "Task-1",
-		State:  task.Pending,
-		Image:  "Image-1",
-		Memory: 1024,
-		Disk:   1,
-	}
-	te := task.TaskEvent{
-		ID:        uuid.New(),
-		State:     task.Pending,
-		Timestamp: time.Now(),
-		Task:      t,
-	}
-	fmt.Printf("task: %v\n", t)
-	fmt.Printf("task event: %v\n", te)
+	whost := os.Getenv("CUBE_WORKER_HOST")
+	wport, _ := strconv.Atoi(os.Getenv("CUBE_WORKER_PORT"))
+
+	mhost := os.Getenv("CUBE_MANAGER_HOST")
+	mport, _ := strconv.Atoi(os.Getenv("CUBE_MANAGER_PORT"))
+
+	fmt.Println("Starting Cube worker")
+
 	w := worker.Worker{
-		Name:  "worker-1",
 		Queue: *queue.New(),
-		Db:    make(map[uuid.UUID]*task.Task)}
-
-	fmt.Printf("worker: %v\n", w)
-	w.CollectStats()
-	w.RunTask()
-	w.StartTask()
-	w.StopTask()
-
-	m := manager.Manager{
-		Pending: *queue.New(),
-		TaskDB:  map[string][]*task.Task{},
-		EventDB: map[string][]*task.TaskEvent{},
-		Workers: []string{w.Name},
+		Db:    make(map[uuid.UUID]*task.Task),
 	}
+	wapi := worker.Api{Address: whost, Port: wport, Worker: &w}
 
-	fmt.Printf("manager: %v\n", m)
-	m.SelectWorker()
-	m.UpdateTasks()
-	m.SendWork()
+	go w.RunTasks()
+	go w.CollectStats()
+	go w.UpdateTasks()
+	go wapi.Start()
 
-	n := node.Node{
-		Name:   "Node-1",
-		Ip:     "192.168.1.1",
-		Cores:  4,
-		Memory: 1024,
-		Disk:   25,
-		Role:   "worker",
-	}
+	fmt.Println("Starting Cube manager")
 
-	fmt.Printf("node: %v\n", n)
+	workers := []string{fmt.Sprintf("%s:%d", whost, wport)}
+	m := manager.New(workers)
+	mapi := manager.Api{Address: mhost, Port: mport, Manager: m}
 
-	fmt.Printf("create a test container\n")
-	dockerTask, createResult := createContainer()
-	if createResult.Error != nil {
-		fmt.Printf("%v", createResult.Error)
-		os.Exit(1)
-	}
-	time.Sleep(time.Second * 5)
-	fmt.Printf("stopping container %s\n", createResult.ContainerId)
-	_ = stopContainer(dockerTask, createResult.ContainerId)
-}
+	go m.ProcessTasks()
+	go m.UpdateTasks()
+	go m.DoHealthChecks()
 
-func createContainer() (*task.Docker, *task.DockerResult) {
-	c := task.Config{
-		Name:  "test-container-1",
-		Image: "postgres:13",
-		Env: []string{
-			"POSTGRES_USER=ochestrator",
-			"POSTGRES_PASSWORD=secret",
-		},
-	}
-	dc, _ := client.NewClientWithOpts(client.FromEnv)
-	d := task.Docker{
-		Client: dc,
-		Config: c,
-	}
-	result := d.Run()
-	if result.Error != nil {
-		fmt.Errorf("%v\n", result.Error)
-		return nil, nil
-	}
-	fmt.Printf("Container %s is running with config %v\n", result.ContainerId, c)
-	return &d, &result
-}
+	mapi.Start()
 
-func stopContainer(d *task.Docker, id string) *task.DockerResult {
-	result := d.Stop(id)
-	if result.Error != nil {
-		fmt.Errorf("%v\n", result.Error)
-		return nil
-	}
-	fmt.Printf("Container %s has stopped and removed\n", result.ContainerId)
-	return &result
 }
