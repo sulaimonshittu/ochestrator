@@ -149,10 +149,6 @@ func (w *Worker) UpdateTasks() {
 }
 
 func (w *Worker) updateTasks() {
-	// for each task in the worker's datastore:
-	// 1. call InspectTask method
-	// 2. verify task is in running state
-	// 3. if task is not in running state, or not running at all, mark task as `failed`
 	for id, t := range w.Db {
 		if t.State == task.Running {
 			resp := w.InspectTask(*t)
@@ -170,7 +166,6 @@ func (w *Worker) updateTasks() {
 				w.Db[id].State = task.Failed
 			}
 
-			// task is running, update exposed ports
 			w.Db[id].HostPorts = resp.Container.NetworkSettings.NetworkSettingsBase.Ports
 		}
 	}

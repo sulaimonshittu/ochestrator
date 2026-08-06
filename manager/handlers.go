@@ -62,7 +62,7 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 	taskToStop := a.Manager.TaskDb[tID]
-	// we need to make a copy so we are not modifying the task in the datastore
+
 	taskCopy := *taskToStop
 	taskCopy.State = task.Completed
 	te.Task = taskCopy

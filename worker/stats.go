@@ -64,7 +64,6 @@ func GetStats() *Stats {
 	}
 }
 
-// GetMemoryInfo See https://godoc.org/github.com/c9s/goprocinfo/linux#MemInfo
 func GetMemoryInfo() *linux.MemInfo {
 	memstats, err := linux.ReadMemInfo("/proc/meminfo")
 	if err != nil {
@@ -75,7 +74,6 @@ func GetMemoryInfo() *linux.MemInfo {
 	return memstats
 }
 
-// GetDiskInfo See https://godoc.org/github.com/c9s/goprocinfo/linux#Disk
 func GetDiskInfo() *linux.Disk {
 	diskstats, err := linux.ReadDisk("/")
 	if err != nil {
@@ -86,7 +84,6 @@ func GetDiskInfo() *linux.Disk {
 	return diskstats
 }
 
-// GetCpuInfo See https://godoc.org/github.com/c9s/goprocinfo/linux#CPUStat
 func GetCpuStats() *linux.CPUStat {
 	stats, err := linux.ReadStat("/proc/stat")
 	if err != nil {
@@ -97,7 +94,6 @@ func GetCpuStats() *linux.CPUStat {
 	return &stats.CPUStatAll
 }
 
-// GetLoadAvg See https://godoc.org/github.com/c9s/goprocinfo/linux#LoadAvg
 func GetLoadAvg() *linux.LoadAvg {
 	loadavg, err := linux.ReadLoadAvg("/proc/loadavg")
 	if err != nil {

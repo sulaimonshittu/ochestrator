@@ -13,11 +13,11 @@ import (
 )
 
 func main() {
-	whost := os.Getenv("CUBE_WORKER_HOST")
-	wport, _ := strconv.Atoi(os.Getenv("CUBE_WORKER_PORT"))
+	whost := os.Getenv("WORKER_HOST")
+	wport, _ := strconv.Atoi(os.Getenv("WORKER_PORT"))
 
-	mhost := os.Getenv("CUBE_MANAGER_HOST")
-	mport, _ := strconv.Atoi(os.Getenv("CUBE_MANAGER_PORT"))
+	mhost := os.Getenv("MANAGER_HOST")
+	mport, _ := strconv.Atoi(os.Getenv("MANAGER_PORT"))
 
 	fmt.Println("Starting Cube worker")
 
@@ -43,5 +43,4 @@ func main() {
 	go m.DoHealthChecks()
 
 	mapi.Start()
-
 }
